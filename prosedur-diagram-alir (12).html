@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prosedur dan Diagram Alir</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+:root {
+  --bg:#0d0f14; --surface:#13161e; --surface2:#1a1e28; --border:#252a38;
+  --accent:#00c896; --accent2:#4f8ef7; --warn:#f59e0b; --danger:#ef4444;
+  --success:#10b981; --text:#e2e8f0; --muted:#64748b;
+  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;min-height:100vh}
+
+/* LOGIN */
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 30% 50%,#0d2a1f 0%,var(--bg) 60%)}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:48px 40px;width:420px;box-shadow:0 0 60px rgba(0,200,150,.07)}
+.login-logo{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px}
+.login-title{font-size:22px;font-weight:600;margin-bottom:4px}
+.login-sub{color:var(--muted);font-size:13px;margin-bottom:36px}
+.field-wrap{margin-bottom:18px}
+.field-label{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;font-family:var(--mono);display:block}
+input[type=text],input[type=password]{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:border .2s}
+input:focus{border-color:var(--accent)}
+.btn-primary{width:100%;background:var(--accent);color:#000;border:none;border-radius:6px;padding:12px;font-weight:600;font-size:14px;cursor:pointer;margin-top:8px;font-family:var(--sans);transition:opacity .2s}
+.btn-primary:hover{opacity:.85}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.login-err{color:var(--danger);font-size:12px;margin-top:12px;font-family:var(--mono);min-height:18px}
+
+/* APP */
+#app{display:none}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.brand{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:2px;text-transform:uppercase}
+.user-badge{font-size:12px;color:var(--muted);font-family:var(--mono)}
+.btn-logout{background:none;border:1px solid var(--border);color:var(--muted);border-radius:5px;padding:5px 14px;cursor:pointer;font-size:12px;transition:all .2s}
+.btn-logout:hover{border-color:var(--danger);color:var(--danger)}
+.layout{display:flex;min-height:calc(100vh - 56px)}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);padding:20px 0;flex-shrink:0}
+.sidebar-section{padding:0 16px;margin-bottom:24px}
+.sidebar-title{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:var(--mono);margin-bottom:8px;padding:0 8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:6px;cursor:pointer;color:var(--muted);font-size:13px;transition:all .15s;margin-bottom:2px}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:rgba(0,200,150,.1);color:var(--accent)}
+.nav-item .icon{font-size:16px;width:20px;text-align:center}
+
+/* MAIN */
+.main{flex:1;padding:28px;overflow-y:auto}
+.page{display:none}
+.page.active{display:block}
+.page-title{font-size:20px;font-weight:600;margin-bottom:4px}
+.page-sub{color:var(--muted);font-size:13px;font-family:var(--mono);margin-bottom:24px}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:20px}
+.card-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.card-title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+.card-body{padding:20px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+
+/* UPLOAD */
+.upload-zone{border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:all .2s}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:rgba(0,200,150,.04)}
+.upload-zone input{display:none}
+.upload-icon{font-size:28px;margin-bottom:8px}
+.upload-text{color:var(--muted);font-size:13px;margin-bottom:4px;font-weight:600}
+.upload-hint{font-size:11px;color:var(--muted);opacity:.6;font-family:var(--mono)}
+
+/* BUTTONS */
+.btn-sm{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:6px 14px;cursor:pointer;font-size:12px;font-family:var(--mono);transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn-sm:hover{border-color:var(--accent);color:var(--accent)}
+.btn-accent{background:rgba(0,200,150,.1);border-color:var(--accent);color:var(--accent)}
+.btn-danger{border-color:var(--danger);color:var(--danger)}
+.btn-danger:hover{background:rgba(239,68,68,.1)}
+
+/* MISC */
+.empty-state{text-align:center;padding:40px;color:var(--muted);font-family:var(--mono);font-size:13px}
+.info-box{background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.25);border-radius:8px;padding:14px 18px;font-size:13px;margin-bottom:16px;color:#93c5fd;line-height:1.6}
+.warn-box{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:14px 18px;font-size:13px;margin-bottom:16px;color:#fcd34d;line-height:1.6}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-family:var(--mono);font-weight:600}
+.badge-ok{background:rgba(16,185,129,.15);color:var(--success)}
+.badge-na{background:var(--surface2);color:var(--muted)}
+
+/* PROCEDURE EDITOR */
+.proc-list{max-height:600px;overflow-y:auto}
+.proc-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.proc-num{font-family:var(--mono);color:var(--accent);min-width:30px;font-size:13px;padding-top:8px;font-weight:600}
+.proc-textarea{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-size:13px;font-family:var(--sans);resize:vertical;outline:none;line-height:1.6;min-height:54px;transition:border .2s}
+.proc-textarea:focus{border-color:var(--accent)}
+.proc-del{background:none;border:none;color:var(--muted);cursor:pointer;padding:6px 8px;font-size:16px;transition:color .2s;margin-top:4px;flex-shrink:0}
+.proc-del:hover{color:var(--danger)}
+.proc-readonly{flex:1;font-size:13px;line-height:1.6;color:var(--text);padding:6px 0}
+
+/* DIAGRAM */
+.flow-outer{overflow-x:auto;overflow-y:auto;max-height:700px;padding:20px 40px}
+  .flow-container{display:flex;flex-direction:column;align-items:center;gap:0;min-width:500px}
+  .flow-step-wrap{position:relative;display:flex;align-items:center;justify-content:center;width:100%}
+  .flow-box{background:var(--surface2);border:1.5px solid var(--accent2);border-radius:8px;padding:12px 24px;text-align:center;font-size:13px;min-width:280px;max-width:380px;position:relative;line-height:1.6;cursor:text;transition:border-color .2s;word-break:break-word}
+  .flow-box[contenteditable=true]:focus{outline:none;border-color:var(--accent);background:rgba(0,200,150,.05)}
+  .flow-vert-section{display:flex;flex-direction:column;align-items:center;width:100%}
+  .flow-vert-top{width:2px;height:20px;background:var(--muted);margin:0 auto}
+  .flow-vert-bottom{width:2px;height:20px;background:var(--muted);position:relative;margin:0 auto}
+  .flow-vert-bottom::after{content:'';position:absolute;bottom:-8px;left:-6px;border:7px solid transparent;border-top-color:var(--muted)}
+  .flow-vert-center{width:2px;background:var(--muted);align-self:stretch;flex-shrink:0}
+  .flow-bahan-row{display:flex;align-items:center;width:100%;justify-content:center}
+  .flow-bahan-left{display:flex;align-items:center;flex-direction:row-reverse}
+  .flow-bahan-right{display:flex;align-items:center}
+  .flow-side-line-h{width:50px;height:2px;background:var(--muted);flex-shrink:0}
+  .flow-side-box-wrap{position:relative;display:inline-flex;align-items:center}
+  .flow-side-box{background:var(--surface);border:1.5px solid var(--border);border-radius:6px;padding:6px 14px;font-size:12px;font-family:var(--mono);color:var(--accent2);white-space:nowrap;cursor:text;min-width:60px;text-align:center;transition:border-color .2s}
+  .flow-side-box[contenteditable=true]:focus{outline:none;border-color:var(--accent2);background:rgba(79,142,247,.06)}
+  .flow-del-btn{position:absolute;top:-9px;right:-9px;width:20px;height:20px;background:var(--danger);color:#fff;border:none;border-radius:50%;font-size:11px;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:10;padding:0;line-height:1}
+  .flow-step-wrap:hover .flow-del-btn{display:flex}
+  .flow-side-del{position:absolute;top:-6px;right:-6px;width:15px;height:15px;background:var(--danger);color:#fff;border:none;border-radius:50%;font-size:9px;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:10;padding:0;line-height:1}
+  .flow-side-box-wrap:hover .flow-side-del{display:flex}
+  .flow-actions{display:flex;align-items:center;justify-content:center;gap:8px;margin:4px 0}
+  .flow-add-side{background:none;border:1px dashed var(--border);color:var(--muted);border-radius:4px;padding:3px 10px;cursor:pointer;font-size:10px;transition:all .2s;white-space:nowrap;font-family:var(--mono)}
+  .flow-add-side:hover{border-color:var(--accent2);color:var(--accent2)}
+  .flow-add-step-btn{background:none;border:1px dashed var(--border);color:var(--muted);border-radius:6px;padding:6px 24px;cursor:pointer;font-size:12px;transition:all .2s;margin-top:12px;font-family:var(--mono)}
+  .flow-add-step-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* DOWNLOAD MENU */
+.dl-menu-wrap{position:relative;display:inline-block}
+.dl-menu{display:none;position:absolute;top:36px;left:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px;z-index:200;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.dl-menu.open{display:block}
+.dl-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:5px;cursor:pointer;font-size:13px;color:var(--text);transition:background .15s;border:none;background:none;width:100%;text-align:left;font-family:var(--sans)}
+.dl-item:hover{background:var(--surface2)}
+
+/* STAT */
+.stat-row{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;flex:1;min-width:120px}
+.stat-label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-family:var(--mono);margin-bottom:6px}
+.stat-value{font-size:24px;font-weight:600;font-family:var(--mono);color:var(--accent2)}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:3px}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center}
+  .modal-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;width:480px;max-width:95vw}
+  .modal-title{font-size:16px;font-weight:600;margin-bottom:6px}
+  .modal-sub{color:var(--muted);font-size:12px;margin-bottom:20px;font-family:var(--mono)}
+  .modal-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;color:var(--text);font-family:var(--sans);font-size:14px;outline:none;margin-bottom:16px}
+  .modal-input:focus{border-color:var(--accent)}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end}
+  .modal-cancel{background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:8px 20px;cursor:pointer;font-size:13px}
+  .modal-cancel:hover{border-color:var(--danger);color:var(--danger)}
+  .modal-save{background:var(--accent);color:#000;border:none;border-radius:6px;padding:8px 24px;cursor:pointer;font-size:13px;font-weight:600}
+  .modal-save:hover{opacity:.85}
+  /* PRODUCT NAME FIELD */
+  .prod-name-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+  .prod-name-label{font-size:11px;font-family:var(--mono);color:var(--muted);white-space:nowrap;text-transform:uppercase;letter-spacing:1px}
+  .prod-name-input{background:none;border:none;outline:none;color:var(--text);font-size:14px;font-weight:600;flex:1;font-family:var(--sans)}
+  /* STORAGE TABLE */
+  .storage-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:16px;overflow:hidden}
+  .storage-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2)}
+  .storage-prod-name{font-weight:600;font-size:15px}
+  .storage-meta{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+  .storage-body{padding:16px 20px}
+  .storage-actions{display:flex;gap:6px;flex-wrap:wrap}
+  .storage-section{margin-bottom:12px;padding:10px 14px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)}
+  .storage-section-title{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-family:var(--mono);margin-bottom:8px}
+  .storage-proc-preview{font-size:12px;color:var(--text);line-height:1.8}
+
+  /* INSERT BUTTON */
+  .insert-btn-wrap{display:flex;align-items:center;justify-content:center;height:28px;opacity:0;transition:opacity .2s}
+  .insert-btn-wrap:hover{opacity:1}
+  #procList:hover .insert-btn-wrap{opacity:.4}
+  #procList:hover .insert-btn-wrap:hover{opacity:1}
+  .flow-container:hover .insert-btn-wrap{opacity:.4}
+  .flow-container:hover .insert-btn-wrap:hover{opacity:1}
+  .insert-btn{background:none;border:1px dashed var(--accent);color:var(--accent);border-radius:4px;padding:2px 12px;cursor:pointer;font-size:10px;font-family:var(--mono);transition:all .2s;white-space:nowrap}
+  .insert-btn:hover{background:rgba(0,200,150,.1)}
+
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-title">Prosedur & Diagram Alir</div>
+    <div class="login-sub">Generate diagram alir otomatis dari prosedur CPB</div>
+    <div class="field-wrap">
+      <label class="field-label">Username</label>
+      <input type="text" id="loginUser" placeholder="username" autocomplete="username">
+    </div>
+    <div class="field-wrap">
+      <label class="field-label">Password</label>
+      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" id="loginBtn" onclick="doLogin()">Masuk</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div class="brand">Prosedur & Diagram Alir</div>
+      
+    </div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div class="user-badge" id="userBadge">—</div>
+      <button class="btn-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Menu</div>
+        <div class="nav-item active" data-page="upload" onclick="navigate(this)"><span class="icon">📂</span>Upload Dokumen</div>
+        <div class="nav-item" data-page="prosedur" onclick="navigate(this)"><span class="icon">📝</span>Buat Prosedur</div>
+        <div class="nav-item" data-page="diagram" onclick="navigate(this)"><span class="icon">🔀</span>Diagram Alir</div>
+        <div class="nav-item" data-page="penyimpanan" onclick="navigate(this)"><span class="icon">💾</span>Penyimpanan</div>
+        <div class="nav-item" data-page="diagramManual" onclick="navigate(this)"><span class="icon">✏️</span>Diagram Manual</div>
+      </div>
+    </div>
+
+    <div class="main">
+
+      <!-- UPLOAD -->
+      <div class="page active" id="page-upload">
+        <div class="page-title">Upload Dokumen</div>
+        <div class="page-sub">Upload CPB dalam format PDF dan DOCX</div>
+        <div class="info-box">Upload <strong>dua versi</strong> CPB: PDF untuk viewing, DOCX untuk ekstrak prosedur otomatis.</div>
+        <div class="grid-2">
+          <div class="upload-zone" id="zone-cpbdocx" onclick="triggerUpload('cpbdocx')" ondragover="dragOver(event,this)" ondragleave="dragLeave(this)" ondrop="dropFile(event,'cpbdocx')">
+            <input type="file" id="file-cpbdocx" accept=".docx" onchange="handleUpload('cpbdocx',this)">
+            <div class="upload-icon">📄</div>
+            <div class="upload-text">CPB — Word (DOCX)</div>
+            <div class="upload-hint">Untuk ekstrak prosedur otomatis</div>
+            <div id="stat-cpbdocx" style="margin-top:10px;font-size:12px;color:var(--accent);font-family:var(--mono)"></div>
+          </div>
+          <div class="upload-zone" id="zone-cpbpdf" onclick="triggerUpload('cpbpdf')" ondragover="dragOver(event,this)" ondragleave="dragLeave(this)" ondrop="dropFile(event,'cpbpdf')">
+            <input type="file" id="file-cpbpdf" accept=".pdf" onchange="handleUpload('cpbpdf',this)">
+            <div class="upload-icon">📑</div>
+            <div class="upload-text">CPB — PDF</div>
+            <div class="upload-hint">Untuk PDF viewer</div>
+            <div id="stat-cpbpdf" style="margin-top:10px;font-size:12px;color:var(--accent);font-family:var(--mono)"></div>
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">📊 Status Dokumen</div></div>
+          <div class="card-body" id="uploadStatus">
+            <div class="empty-state">Belum ada dokumen diupload.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BUAT PROSEDUR -->
+      <div class="page" id="page-prosedur">
+        <div class="page-title">Buat Prosedur</div>
+        <div class="page-sub">Lihat PDF CPB dan edit prosedur hasil ekstraksi</div>
+        <div id="prosedurContent">
+          <div class="empty-state">Upload CPB (PDF dan DOCX) terlebih dahulu.</div>
+        </div>
+      </div>
+
+      <!-- DIAGRAM ALIR -->
+      <div class="page" id="page-diagram">
+        <div class="page-title">Diagram Alir</div>
+        <div class="page-sub">Generate dan edit diagram alir dari prosedur CPB</div>
+        <div id="diagramContent">
+          <div class="empty-state">Buat prosedur terlebih dahulu di menu "Buat Prosedur".</div>
+        </div>
+      </div>
+
+      <!-- DIAGRAM MANUAL -->
+      <div class="page" id="page-diagramManual">
+        <div class="page-title">Diagram Alir Manual</div>
+        <div class="page-sub">Buat diagram alir manual dari nol</div>
+        <div id="diagramManualContent"></div>
+      </div>
+
+      <!-- PENYIMPANAN -->
+      <div class="page" id="page-penyimpanan">
+        <div class="page-title">Penyimpanan</div>
+        <div class="page-sub">Data prosedur dan diagram alir yang telah disimpan</div>
+        <div id="penyimpananContent"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ── AUTH ──
+const USERS = {
+  'diagramalir': { password: 'Regu564', name: 'Diagram Alir', role: 'user' }
+};
+
+const S = {
+  user: null,
+  docs: { cpbdocx: null, cpbpdf: null },
+  parsed: { cpb: null },
+  pdfUrl: null
+};
+
+// G.procedures = working copy for Buat Prosedur (editable)
+// G.diagram    = working copy for Diagram Alir (editable, separate)
+// G.origProc   = original from CPB parse (for reset)
+const G = {
+  procedures: [],  // Buat Prosedur editable
+  diagram: [],     // Diagram Alir editable (separate)
+  origProc: []     // original from CPB
+};
+
+// ── AUTH ──
+function doLogin() {
+  var btn = document.getElementById('loginBtn');
+  var errEl = document.getElementById('loginErr');
+  var username = document.getElementById('loginUser').value.trim();
+  var password = document.getElementById('loginPass').value;
+  errEl.textContent = '';
+  if (!username || !password) { errEl.textContent = '❌ Isi username dan password'; return; }
+  var user = USERS[username];
+  if (!user || user.password !== password) { errEl.textContent = '❌ Username atau password salah'; return; }
+  S.user = { name: user.name, role: user.role };
+  document.getElementById('userBadge').textContent = user.name + ' [' + user.role + ']';
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  renderUploadStatus();
+}
+
+function doLogout() {
+  S.user = null;
+  ['loginUser','loginPass'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('loginErr').textContent = '';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+// ── NAVIGATION ──
+function navigate(el) {
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  el.classList.add('active');
+  var page = el.dataset.page;
+  document.getElementById('page-' + page).classList.add('active');
+  if (page === 'prosedur') renderProsedur();
+  if (page === 'diagram') renderDiagram();
+  if (page === 'penyimpanan') renderPenyimpanan();
+  if (page === 'diagramManual') renderDiagramManual();
+}
+
+// ── UPLOAD ──
+function triggerUpload(type) { document.getElementById('file-' + type).click(); }
+function dragOver(e, el) { e.preventDefault(); el.classList.add('dragover'); }
+function dragLeave(el) { el.classList.remove('dragover'); }
+function dropFile(e, type) {
+  e.preventDefault();
+  var z = document.getElementById('zone-' + type);
+  if (z) z.classList.remove('dragover');
+  if (e.dataTransfer.files[0]) processFile(type, e.dataTransfer.files[0]);
+}
+function handleUpload(type, inp) { if (inp.files[0]) processFile(type, inp.files[0]); }
+
+async function processFile(type, file) {
+  var statEl = document.getElementById('stat-' + type);
+  var zone = document.getElementById('zone-' + type);
+  if (statEl) statEl.textContent = '⏳ Membaca...';
+  if (zone) zone.style.borderColor = 'var(--warn)';
+  try {
+    var ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'docx') {
+      var text = await readDOCX(file);
+      S.docs[type] = { name: file.name, text: text };
+      if (type === 'cpbdocx') {
+        S.parsed.cpb = parseCPB(text);
+        initProcedures();
+      }
+    } else if (ext === 'pdf') {
+      var url = URL.createObjectURL(file);
+      S.docs[type] = { name: file.name, pdfUrl: url };
+      if (type === 'cpbpdf') S.pdfUrl = url;
+    } else { throw new Error('Format tidak didukung'); }
+    if (statEl) statEl.textContent = '✅ ' + file.name;
+    if (zone) zone.style.borderColor = 'var(--success)';
+    renderUploadStatus();
+  } catch(e) {
+    if (statEl) statEl.textContent = '❌ ' + e.message;
+    if (zone) zone.style.borderColor = 'var(--danger)';
+  }
+}
+
+function readDOCX(file) {
+  return new Promise(function(res, rej) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      mammoth.extractRawText({ arrayBuffer: e.target.result })
+        .then(function(r){ res(r.value); }).catch(rej);
+    };
+    reader.onerror = function(){ rej(new Error('Gagal baca DOCX')); };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function renderUploadStatus() {
+  var el = document.getElementById('uploadStatus');
+  if (!el) return;
+  var types = { cpbdocx: 'CPB (DOCX)', cpbpdf: 'CPB (PDF)' };
+  var html = '';
+  Object.keys(types).forEach(function(k) {
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">';
+    html += '<span>' + types[k] + '</span>';
+    html += S.docs[k] ? '<span class="badge badge-ok">✓ ' + S.docs[k].name + '</span>' : '<span class="badge badge-na">Belum diupload</span>';
+    html += '</div>';
+  });
+  if (S.docs.cpbdocx && S.docs.cpbpdf) {
+    html += '<div style="margin-top:16px;text-align:center"><button class="btn-primary" style="width:auto;padding:10px 32px" onclick="goToProsedur()">▶ Lanjut ke Buat Prosedur</button></div>';
+  }
+  el.innerHTML = html;
+}
+
+function goToProsedur() {
+  navigate(document.querySelector('[data-page="prosedur"]'));
+}
+
+// ── PARSER CPB ──
+function parseCPB(text) {
+  var cleaned = text
+    .replace(/\b([A-Z])\s([A-Z]\d{2,3})\b/g, '$1$2')
+    .replace(/([A-Z]{2})(\d)\s(\d)/g, '$1$2$3')
+    .replace(/\.{2,}/g, ' ')
+    .replace(/[………\.]{2,}/g, ' ')
+    .replace(/[\u2026\u22EF\u2025]+/g, ' ')
+    .replace(/\s+/g, ' ');
+
+  var productName = '';
+  var pnMatch = cleaned.match(/[Nn]ama [Pp]roduk\s*[:：]\s*([^\n]+)/);
+  if (pnMatch) productName = pnMatch[1].trim();
+
+  var procStart = cleaned.search(/[Pp]rosedur [Pp]engolahan/);
+  if (procStart < 0) procStart = 0;
+  var procText = cleaned.slice(procStart);
+  var stopMatch = procText.search(/REKONSILIASI|Diperiksa oleh|Disetujui Oleh/i);
+  if (stopMatch > 0) procText = procText.slice(0, stopMatch);
+
+  procText = procText.replace(/Jam Mulai\s+Jam Selesai\s+Suhu Awal\s+Suhu Akhir\s+(Kecepatan\s*\/\s*Homogenizer|Kecepatan)\s+Catatan/gi, ' ');
+  procText = procText.replace(/Paraf\s+Pr\s*d\s+QC/gi, ' ');
+  procText = procText.replace(/No\s+Prosedur\s+Paraf/gi, ' ');
+
+  var matches = [];
+  var stepRe = /(?:^|\s)(\d{1,2})\s+([A-Z][a-zA-Z])/gm;
+  var m;
+  while ((m = stepRe.exec(procText)) !== null) {
+    var num = parseInt(m[1]);
+    if (num < 1 || num > 20) continue;
+    var before = procText.slice(Math.max(0, m.index - 10), m.index);
+    if (/[\d,]\s*$/.test(before)) continue;
+    var after = procText.slice(m.index + m[0].length - 2, m.index + m[0].length + 30);
+    if (/^(Gram|gram|mL|ml|Kg|kg|rpm|cP|\d)/.test(after.trim())) continue;
+    matches.push({ pos: m.index + m[0].indexOf(m[1]), num: num });
+  }
+
+  var procedures = [];
+  for (var i = 0; i < matches.length; i++) {
+    var pos = matches[i].pos;
+    var num = matches[i].num;
+    var end = i + 1 < matches.length ? matches[i+1].pos : procText.length;
+    var chunk = procText.slice(pos, end).replace(/^\d{1,2}\s+/, '').trim();
+    chunk = chunk.replace(/Jam Mulai.*?Catatan/gi, ' ');
+    if (/pengujian terhadap|Organoleptik|Parameter.*Spesifikasi|pH\s*Spesifikasi|Viskositas/i.test(chunk)) {
+      chunk = 'Setelah selesai mixing, lakukan pengujian QC.';
+    }
+    var kodeRe2 = /\b([A-Z]{2}\d{2,3})\b/g;
+    var kodes = [], km2;
+    while ((km2 = kodeRe2.exec(chunk)) !== null) {
+      if (!kodes.includes(km2[1])) kodes.push(km2[1]);
+    }
+    chunk = chunk.replace(/\b([A-Z]{2}\d{2,3})\d+\b/g, '$1')
+      .replace(/[………\.\s]{3,}$/, '').replace(/\s+/g, ' ').trim();
+    if (chunk.length < 5) continue;
+    if (/^(Paraf|QC|Prd|No\s+Prosedur)$/i.test(chunk)) continue;
+    procedures.push({ num: num, text: chunk, _kodes: kodes });
+  }
+
+  procedures.sort(function(a,b){return a.num-b.num;});
+  var seen = {};
+  procedures = procedures.filter(function(p) {
+    if (seen[p.num]) return false; seen[p.num]=true; return true;
+  });
+  return { productName: productName, procedures: procedures };
+}
+
+function makeProcEntry(p) {
+  var kodes = p._kodes && p._kodes.length ? p._kodes : (p.text.match(/[A-Z]{2}\d{2,3}/g)||[]);
+  kodes = kodes.filter(function(k,i,a){return a.indexOf(k)===i;});
+  var sides = kodes.map(function(k){return{text:k,dir:'right'};});
+  return { num: p.num, text: p.text, sides: sides };
+}
+
+function initProcedures() {
+  if (!S.parsed.cpb) return;
+  G.origProc = S.parsed.cpb.procedures.map(makeProcEntry);
+  G.procedures = JSON.parse(JSON.stringify(G.origProc));
+  // Build smarter diagram: extract bahan from text, clean step text
+  G.diagram = buildSmartDiagram(S.parsed.cpb.procedures);
+}
+
+// Smart diagram builder: extract kode BB + gram from step text
+// Places bahan BEFORE the step they are added in (between prev and current)
+function buildSmartDiagram(procedures) {
+  var BAHAN_PAT = /\b([A-Z]{2}\d{2,3})\b[\s\.]*[\d][\d\.,]*\s*(?:Gram|gram)\b/g;
+  var result = [];
+  var stepNum = 1;
+
+  procedures.forEach(function(p) {
+    var text = p.text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+
+    // Find all bahan (KODE number Gram) matches
+    BAHAN_PAT.lastIndex = 0;
+    var bahanMatches = [];
+    var m;
+    while ((m = BAHAN_PAT.exec(text)) !== null) {
+      bahanMatches.push({ kode: m[1], start: m.index, end: m.index + m[0].length });
+    }
+
+    if (bahanMatches.length === 0) {
+      result.push({ num: stepNum++, text: text, sides: [], bahanOnly: false });
+      return;
+    }
+
+    // Extract unique kodes
+    var kodes = [];
+    bahanMatches.forEach(function(bm) {
+      if (!kodes.includes(bm.kode)) kodes.push(bm.kode);
+    });
+
+    // Action text = everything AFTER last bahan match, cleaned up
+    var lastEnd = bahanMatches[bahanMatches.length - 1].end;
+    var actionText = text.slice(lastEnd).trim();
+    // Remove leading punctuation/conjunctions
+    actionText = actionText.replace(/^[,;\s]+/, '').trim();
+
+    // Node 1: bahan-only node BEFORE action
+    result.push({
+      num: stepNum++,
+      text: '',
+      sides: [{ text: kodes.join(', '), dir: 'right' }],
+      bahanOnly: true
+    });
+
+    // Node 2: action box - only the action text after bahan
+    if (actionText.length > 5) {
+      result.push({ num: stepNum++, text: actionText, sides: [], bahanOnly: false });
+    }
+  });
+
+  result.forEach(function(r, i) { r.num = i + 1; });
+  return result;
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── BUAT PROSEDUR ──
+// Format procedure text: put each "KODE xxx Gram" on its own line
+function formatProcText(text) {
+  // Pattern: KODE (optional dots/spaces) number (optional dots/commas) Gram
+  return text.replace(/([A-Z]{2}\d{2,3})\s*[.\s]*([\d][\d\.,]*)\s*(Gram|gram)/g, '\n$1 $2 $3\n')
+    .replace(/:\s*\n/g, ':\n')
+    .replace(/\n{3,}/g, '\n')
+    .trim();
+}
+
+function renderProsedur() {
+  var el = document.getElementById('prosedurContent');
+  if (!S.docs.cpbdocx && !S.docs.cpbpdf) {
+    el.innerHTML = '<div class="empty-state">Upload CPB (PDF dan DOCX) terlebih dahulu.</div>'; return;
+  }
+  var html = '';
+  // Product name field
+  html += '<div class="prod-name-wrap"><span class="prod-name-label">Nama Produk</span>';
+  html += '<input class="prod-name-input" id="prodNameProc" type="text" placeholder="Masukkan nama produk..." value="' + esc(currentProductName) + '" oninput="currentProductName=this.value"></div>';
+  html += '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">';
+  html += '<button class="btn-sm btn-accent" onclick="saveProc()">💾 Simpan Prosedur</button>';
+  html += '<button class="btn-sm" onclick="resetProc()">↺ Reset ke Otomatis</button>';
+  html += '</div>';
+
+  html += '<div class="grid-2" style="align-items:start">';
+  // PDF viewer
+  html += '<div class="card"><div class="card-header"><div class="card-title">📑 ' + (S.docs.cpbpdf ? esc(S.docs.cpbpdf.name) : 'CPB — PDF') + '</div></div>';
+  html += '<div class="card-body" style="padding:10px">';
+  if (S.pdfUrl) html += '<iframe src="' + S.pdfUrl + '" style="width:100%;height:680px;border:1px solid var(--border);border-radius:6px"></iframe>';
+  else html += '<div class="empty-state">Upload CPB (PDF) untuk melihat dokumen.</div>';
+  html += '</div></div>';
+
+  // Procedure editor
+  html += '<div class="card"><div class="card-header"><div class="card-title">📝 Prosedur CPB</div>';
+  html += '<button class="btn-sm" onclick="addStep(-1)">+ Tambah di Akhir</button>';
+  html += '</div><div class="card-body">';
+  if (G.procedures.length === 0) {
+    html += '<div class="warn-box">Prosedur belum terdeteksi. Tambahkan manual.</div>';
+  } else {
+    html += '<div id="procList">';
+    // Insert button at top
+    html += insertBtn(0, 'proc');
+    G.procedures.forEach(function(p, i) {
+      html += '<div class="proc-item">';
+      html += '<div class="proc-num">' + p.num + '.</div>';
+      // Show text as-is - only format on first load (if no newlines yet)
+      var displayText = p.text;
+      if (displayText.indexOf('\n') === -1) {
+        displayText = formatProcText(displayText);
+      }
+      var rowCount = Math.max(2, (displayText.match(/\n/g)||[]).length + 2);
+      html += '<textarea class="proc-textarea" id="proc-' + i + '" rows="' + rowCount + '">' + esc(displayText) + '</textarea>';
+      html += '<button class="proc-del" onclick="deleteStep(' + i + ')" title="Hapus">✕</button>';
+      html += '</div>';
+      html += insertBtn(i + 1, 'proc');
+    });
+    html += '</div>';
+  }
+  html += '</div></div></div>';
+  el.innerHTML = html;
+}
+
+function insertBtn(afterIdx, mode) {
+  return '<div class="insert-btn-wrap">' +
+    '<button class="insert-btn" onclick="' + (mode==='proc' ? 'addStep' : 'addDiagStep') + '(' + afterIdx + ')">+ Sisip di sini</button>' +
+    '</div>';
+}
+
+function saveProcFromDOM() {
+  G.procedures.forEach(function(p, i) {
+    var ta = document.getElementById('proc-' + i);
+    if (ta) {
+      // Keep text exactly as user edited it
+      p.text = ta.value;
+    }
+  });
+  var pn = document.getElementById('prodNameProc');
+  if (pn) currentProductName = pn.value;
+}
+
+function addStep(afterIdx) {
+  saveProcFromDOM();
+  var newStep = { num: 0, text: 'Langkah baru...', sides: [] };
+  if (afterIdx < 0 || afterIdx >= G.procedures.length) {
+    G.procedures.push(newStep);
+  } else {
+    G.procedures.splice(afterIdx, 0, newStep);
+  }
+  G.procedures.forEach(function(p, i){ p.num = i + 1; });
+  renderProsedur();
+}
+
+function deleteStep(i) {
+  saveProcFromDOM();
+  G.procedures.splice(i, 1);
+  G.procedures.forEach(function(p, idx){ p.num = idx + 1; });
+  renderProsedur();
+}
+
+function resetProc() {
+  if (!confirm('Reset prosedur ke hasil otomatis dari CPB?')) return;
+  G.procedures = JSON.parse(JSON.stringify(G.origProc));
+  renderProsedur();
+}
+
+function saveProc() {
+  saveProcFromDOM();
+  saveCurrentData('prosedur');
+}
+
+// ── DIAGRAM ALIR ──
+function renderDiagram() {
+  var el = document.getElementById('diagramContent');
+  var html = '';
+
+  // Product name
+  html += '<div class="prod-name-wrap"><span class="prod-name-label">Nama Produk</span>';
+  html += '<input class="prod-name-input" id="prodNameDiag" type="text" placeholder="Masukkan nama produk..." value="' + esc(currentProductName) + '" oninput="currentProductName=this.value"></div>';
+  html += '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">';
+  html += '<button class="btn-sm btn-accent" onclick="saveDiagram()">💾 Simpan Diagram</button>';
+  html += '<button class="btn-sm" onclick="resetDiagram()">↺ Reset ke Otomatis</button>';
+  html += '<button class="btn-sm" onclick="addDiagStep(-1)">+ Tambah di Akhir</button>';
+  // Download menu
+  html += '<div class="dl-menu-wrap"><button class="btn-sm" style="border-color:var(--accent2);color:var(--accent2)" onclick="toggleDlMenu(event)">⬇ Download ▾</button>';
+  html += '<div class="dl-menu" id="dlMenu">';
+  html += '<button class="dl-item" onclick="downloadSVG()">🖼 Download SVG</button>';
+  html += '<button class="dl-item" onclick="downloadPNG()">📷 Download PNG</button>';
+  html += '<button class="dl-item" onclick="downloadExcel()">📊 Download Excel</button>';
+  html += '</div></div></div>';
+
+  html += '<div class="grid-2" style="align-items:start">';
+
+  // Read-only procedure from G.procedures (Buat Prosedur)
+  html += '<div class="card"><div class="card-header"><div class="card-title">📋 Prosedur (dari Buat Prosedur)</div></div>';
+  html += '<div class="card-body"><div class="proc-list">';
+  if (G.procedures.length === 0) {
+    html += '<div class="empty-state">Buat prosedur di menu "Buat Prosedur" dulu.</div>';
+  } else {
+    G.procedures.forEach(function(p) {
+      // Show ALL text as-is - no filtering
+      var displayText = p.text;
+      if (displayText.indexOf('\n') === -1) displayText = formatProcText(displayText);
+      var htmlText = esc(displayText).replace(/\n/g, '<br>');
+      html += '<div class="proc-item"><div class="proc-num">' + p.num + '.</div><div style="flex:1;font-size:13px;line-height:1.8">' + htmlText + '</div></div>';
+    });
+  }
+  html += '</div></div></div>';
+
+  // Diagram
+  html += '<div class="card"><div class="card-header"><div class="card-title">🔀 Diagram Alir</div><div style="font-size:11px;color:var(--muted)">Klik teks untuk edit</div></div>';
+  html += '<div class="card-body" style="padding:10px"><div class="flow-outer"><div class="flow-container" id="flowContainer">';
+  html += buildFlowHTML();
+  html += '</div></div></div></div>';
+
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function buildFlowHTML() {
+  if (G.diagram.length === 0) return '<div class="empty-state">Belum ada langkah di diagram.</div>';
+  var html = '';
+  html += insertBtn(0, 'diag');
+
+  G.diagram.forEach(function(p, i) {
+    var rights = (p.sides||[]).filter(function(s){return s.dir!=='left';});
+    var lefts  = (p.sides||[]).filter(function(s){return s.dir==='left';});
+    var hasNext = i < G.diagram.length - 1;
+    var isBahanOnly = p.bahanOnly || (!p.text || p.text.trim() === '');
+
+    if (isBahanOnly) {
+      // Bahan-only node: just show side box + vertical line, no main box
+      html += '<div class="flow-step-wrap" id="fs-' + i + '" style="min-height:50px">';
+      html += '<button class="flow-del-btn" onclick="deleteDiagStep(' + i + ')">✕</button>';
+
+      // Vertical line with bahan box hanging off it
+      html += '<div style="display:flex;flex-direction:column;align-items:center;width:100%">';
+      html += '<div class="flow-vert-top"></div>';
+      html += '<div class="flow-bahan-row">';
+      if (lefts.length) {
+        html += '<div class="flow-bahan-left">';
+        lefts.forEach(function(s) {
+          var si = p.sides.indexOf(s);
+          html += '<div class="flow-side-box-wrap"><div class="flow-side-line-h"></div>';
+          html += '<div class="flow-side-box" contenteditable="true" onblur="updateSide(' + i + ',' + si + ',this.innerText)">' + esc(s.text) + '</div>';
+          html += '<button class="flow-side-del" onclick="deleteSide(' + i + ',' + si + ')">✕</button></div>';
+        });
+        html += '</div>';
+      }
+      html += '<div class="flow-vert-center" style="min-height:36px"></div>';
+      if (rights.length) {
+        html += '<div class="flow-bahan-right">';
+        rights.forEach(function(s) {
+          var si = p.sides.indexOf(s);
+          html += '<div class="flow-side-box-wrap">';
+          html += '<div class="flow-side-box" contenteditable="true" onblur="updateSide(' + i + ',' + si + ',this.innerText)">' + esc(s.text) + '</div>';
+          html += '<div class="flow-side-line-h"></div>';
+          html += '<button class="flow-side-del" onclick="deleteSide(' + i + ',' + si + ')">✕</button></div>';
+        });
+        html += '</div>';
+      }
+      html += '</div>'; // bahan-row
+      html += '<div class="flow-vert-top"></div>';
+      html += '</div>';
+      html += '</div>'; // flow-step-wrap
+
+    } else {
+      // Normal node: main box
+      html += '<div class="flow-step-wrap" id="fs-' + i + '">';
+      html += '<button class="flow-del-btn" onclick="deleteDiagStep(' + i + ')">✕</button>';
+      html += '<div class="flow-box" contenteditable="true" onblur="updateStep(' + i + ',this.innerText)">' + esc(p.text) + '</div>';
+      html += '</div>';
+
+      if (hasNext || (p.sides && p.sides.length > 0)) {
+        html += '<div class="flow-vert-section">';
+        html += '<div class="flow-vert-top"></div>';
+
+        if (p.sides && p.sides.length > 0) {
+          html += '<div class="flow-bahan-row">';
+          if (lefts.length) {
+            html += '<div class="flow-bahan-left">';
+            lefts.forEach(function(s) {
+              var si = p.sides.indexOf(s);
+              html += '<div class="flow-side-box-wrap"><div class="flow-side-line-h"></div>';
+              html += '<div class="flow-side-box" contenteditable="true" onblur="updateSide(' + i + ',' + si + ',this.innerText)">' + esc(s.text) + '</div>';
+              html += '<button class="flow-side-del" onclick="deleteSide(' + i + ',' + si + ')">✕</button></div>';
+            });
+            html += '</div>';
+          }
+          html += '<div class="flow-vert-center"></div>';
+          if (rights.length) {
+            html += '<div class="flow-bahan-right">';
+            rights.forEach(function(s) {
+              var si = p.sides.indexOf(s);
+              html += '<div class="flow-side-box-wrap">';
+              html += '<div class="flow-side-box" contenteditable="true" onblur="updateSide(' + i + ',' + si + ',this.innerText)">' + esc(s.text) + '</div>';
+              html += '<div class="flow-side-line-h"></div>';
+              html += '<button class="flow-side-del" onclick="deleteSide(' + i + ',' + si + ')">✕</button></div>';
+            });
+            html += '</div>';
+          }
+          html += '</div>';
+        } else {
+          html += '<div class="flow-vert-center" style="height:24px"></div>';
+        }
+
+        if (hasNext) html += '<div class="flow-vert-bottom"></div>';
+        html += '</div>';
+      }
+    }
+
+    html += '<div class="flow-actions">';
+    html += '<button class="flow-add-side" onclick="addSide(' + i + ',0)">← + Bahan</button>';
+    html += '<button class="flow-add-side" onclick="addSide(' + i + ',1)">+ Bahan →</button>';
+    html += '</div>';
+    html += insertBtn(i + 1, 'diag');
+  });
+
+  html += '<button class="flow-add-step-btn" onclick="addDiagStep(-1)">+ Tambah di Akhir</button>';
+  return html;
+}
+
+function updateStep(i, txt) { if (G.diagram[i]) G.diagram[i].text = txt.trim(); }
+function updateSide(si, sj, txt) { if (G.diagram[si] && G.diagram[si].sides[sj]) G.diagram[si].sides[sj].text = txt.trim(); }
+
+function deleteDiagStep(i) {
+  G.diagram.splice(i, 1);
+  G.diagram.forEach(function(p,idx){p.num=idx+1;});
+  renderDiagram();
+}
+
+function addDiagStep(afterIdx) {
+  var newStep = { num: 0, text: 'Langkah baru...', sides: [] };
+  if (afterIdx < 0 || afterIdx >= G.diagram.length) {
+    G.diagram.push(newStep);
+  } else {
+    G.diagram.splice(afterIdx, 0, newStep);
+  }
+  G.diagram.forEach(function(p,i){p.num=i+1;});
+  renderDiagram();
+}
+
+function addSide(stepI, isRight) {
+  if (!G.diagram[stepI]) return;
+  if (!G.diagram[stepI].sides) G.diagram[stepI].sides = [];
+  G.diagram[stepI].sides.push({ text: 'BB', dir: isRight ? 'right' : 'left' });
+  renderDiagram();
+}
+
+function deleteSide(stepI, sideI) {
+  G.diagram[stepI].sides.splice(sideI, 1);
+  renderDiagram();
+}
+
+function resetDiagram() {
+  if (!confirm('Reset diagram ke otomatis dari prosedur?')) return;
+  G.diagram = JSON.parse(JSON.stringify(G.origProc));
+  renderDiagram();
+}
+
+function saveDiagram() {
+  var pn = document.getElementById('prodNameDiag');
+  if (pn) currentProductName = pn.value;
+  saveCurrentData('diagram');
+}
+
+// ── STORAGE ──
+var STORAGE_KEY = 'pda_storage';
+var currentProductName = '';
+
+function getStorage() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch(e) { return []; }
+}
+function setStorage(data) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
+}
+
+function saveCurrentData(type) {
+  var name = currentProductName.trim();
+  if (!name) { showToast('❌ Isi nama produk terlebih dahulu'); return; }
+  var storage = getStorage();
+  var item = storage.find(function(s){return s.name===name;});
+  if (!item) { item = { name: name, savedAt: '', prosedur: null, diagram: null, diagramSVG: null }; storage.push(item); }
+  item.savedAt = new Date().toISOString();
+  if (type === 'prosedur') item.prosedur = JSON.parse(JSON.stringify(G.procedures));
+  if (type === 'diagram') { item.diagram = JSON.parse(JSON.stringify(G.diagram)); item.diagramSVG = buildSVG(); }
+  setStorage(storage);
+  showToast('✓ ' + name + ' berhasil disimpan');
+  renderPenyimpanan();
+}
+
+function deleteStorageItem(name, type) {
+  var storage = getStorage();
+  var idx = storage.findIndex(function(s){return s.name===name;});
+  if (idx < 0) return;
+  var label = { all:'semua data', prosedur:'prosedur', diagram:'diagram' }[type];
+  if (!confirm('Hapus ' + label + ' "' + name + '"?')) return;
+  if (type === 'all') { storage.splice(idx, 1); }
+  else if (type === 'prosedur') { storage[idx].prosedur = null; if (!storage[idx].diagram) storage.splice(idx, 1); }
+  else if (type === 'diagram') { storage[idx].diagram = null; storage[idx].diagramSVG = null; if (!storage[idx].prosedur) storage.splice(idx, 1); }
+  setStorage(storage);
+  renderPenyimpanan();
+}
+
+function storageAction(btn) {
+  var action = btn.getAttribute('data-action');
+  var name = btn.getAttribute('data-name');
+  if (action === 'excel') downloadStorageExcel(name);
+  else if (action === 'svg') downloadStorageSVG(name);
+  else if (action === 'png') downloadStoragePNG(name);
+  else if (action === 'del-prosedur') deleteStorageItem(name, 'prosedur');
+  else if (action === 'del-diagram') deleteStorageItem(name, 'diagram');
+  else if (action === 'del-all') deleteStorageItem(name, 'all');
+}
+
+function downloadStorageExcel(name) {
+  if (typeof XLSX === 'undefined') return;
+  var storage = getStorage();
+  var item = storage.find(function(s){return s.name===name;});
+  if (!item) return;
+  var wb = XLSX.utils.book_new();
+  // Prosedur sheet
+  if (item.prosedur) {
+    var wsData = [['No','Prosedur']];
+    item.prosedur.forEach(function(p){ wsData.push([p.num, p.text]); });
+    var ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws['!cols'] = [{wch:5},{wch:80}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Prosedur');
+  }
+  // Diagram sheet
+  if (item.diagram) {
+    var wsData2 = [['No','Langkah','Bahan Kanan','Bahan Kiri']];
+    item.diagram.forEach(function(p){
+      var rights = (p.sides||[]).filter(function(s){return s.dir!=='left';}).map(function(s){return s.text;}).join(', ');
+      var lefts  = (p.sides||[]).filter(function(s){return s.dir==='left';}).map(function(s){return s.text;}).join(', ');
+      wsData2.push([p.num, p.text, rights, lefts]);
+    });
+    var ws2 = XLSX.utils.aoa_to_sheet(wsData2);
+    ws2['!cols'] = [{wch:5},{wch:70},{wch:25},{wch:25}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Diagram Alir');
+  }
+  XLSX.writeFile(wb, name.replace(/\s+/g,'-') + '.xlsx');
+}
+
+function downloadStorageSVG(name) {
+  var storage = getStorage();
+  var item = storage.find(function(s){return s.name===name;});
+  if (!item || !item.diagramSVG) { showToast('❌ Simpan diagram terlebih dahulu'); return; }
+  var blob = new Blob([item.diagramSVG], { type: 'image/svg+xml;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name.replace(/\s+/g,'-') + '-diagram.svg';
+  a.click();
+}
+
+function downloadStoragePNG(name) {
+  var storage = getStorage();
+  var item = storage.find(function(s){return s.name===name;});
+  if (!item || !item.diagramSVG) { showToast('❌ Simpan diagram terlebih dahulu'); return; }
+  svgToPNG(item.diagramSVG, name.replace(/\s+/g,'-') + '-diagram.png');
+}
+
+function svgToPNG(svgStr, filename) {
+  var blob = new Blob([svgStr], {type:'image/svg+xml;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var img = new Image();
+  img.onload = function() {
+    var canvas = document.createElement('canvas');
+    canvas.width = img.width * 2;
+    canvas.height = img.height * 2;
+    var ctx = canvas.getContext('2d');
+    ctx.scale(2, 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, img.width, img.height);
+    ctx.drawImage(img, 0, 0);
+    URL.revokeObjectURL(url);
+    var a = document.createElement('a');
+    a.download = filename || 'diagram.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  };
+  img.onerror = function() { showToast('❌ Gagal convert ke PNG'); URL.revokeObjectURL(url); };
+  img.src = url;
+}
+
+// ── DOWNLOAD (current diagram) ──
+function toggleDlMenu(e) {
+  e.stopPropagation();
+  var m = document.getElementById('dlMenu');
+  if (m) m.classList.toggle('open');
+}
+document.addEventListener('click', function() {
+  var m = document.getElementById('dlMenu');
+  if (m) m.classList.remove('open');
+});
+
+function downloadSVG() {
+  var svg = buildSVG();
+  var blob = new Blob([svg], {type:'image/svg+xml;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (currentProductName||'diagram-alir').replace(/\s+/g,'-') + '.svg';
+  a.click();
+  var m = document.getElementById('dlMenu'); if(m) m.classList.remove('open');
+}
+
+function downloadPNG() {
+  var svg = buildSVG();
+  svgToPNG(svg, (currentProductName||'diagram-alir').replace(/\s+/g,'-') + '.png');
+  var m = document.getElementById('dlMenu'); if(m) m.classList.remove('open');
+}
+
+function downloadExcel() {
+  if (typeof XLSX === 'undefined') return;
+  var wb = XLSX.utils.book_new();
+  var wsData = [['No','Langkah','Bahan Kanan','Bahan Kiri']];
+  G.diagram.forEach(function(p) {
+    var rights = (p.sides||[]).filter(function(s){return s.dir!=='left';}).map(function(s){return s.text;}).join(', ');
+    var lefts  = (p.sides||[]).filter(function(s){return s.dir==='left';}).map(function(s){return s.text;}).join(', ');
+    wsData.push([p.num, p.text, rights, lefts]);
+  });
+  var ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = [{wch:5},{wch:70},{wch:25},{wch:25}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Diagram Alir');
+  XLSX.writeFile(wb, (currentProductName||'diagram').replace(/\s+/g,'-') + '.xlsx');
+  var m = document.getElementById('dlMenu'); if(m) m.classList.remove('open');
+}
+
+// ── BUILD SVG ──
+function buildSVG() {
+  var BOX_W = 320, BOX_H = 70, SIDE_H = 36, SIDE_W = 120;
+  var LINE_H = 20, BAHAN_H = 50, CX = 400, totalW = 900;
+  var totalH = 40;
+  G.diagram.forEach(function(p, i) {
+    totalH += BOX_H;
+    var hasSides = p.sides && p.sides.length > 0;
+    var hasNext = i < G.diagram.length - 1;
+    if (hasSides || hasNext) {
+      totalH += LINE_H;
+      if (hasSides) totalH += BAHAN_H;
+      if (hasNext) totalH += LINE_H + 8;
+    }
+  });
+  totalH += 40;
+
+  var svg = '<?xml version="1.0" encoding="UTF-8"?>\n';
+  svg += '<svg xmlns="http://www.w3.org/2000/svg" width="' + totalW + '" height="' + totalH + '">';
+  svg += '<rect width="100%" height="100%" fill="#ffffff"/>';
+  svg += '<style>text{font-family:Arial,Helvetica,sans-serif;fill:#1a1a1a}</style>';
+
+  var y = 30;
+  G.diagram.forEach(function(p, i) {
+    var rights = (p.sides||[]).filter(function(s){return s.dir!=='left';});
+    var lefts  = (p.sides||[]).filter(function(s){return s.dir==='left';});
+    var hasSides = rights.length > 0 || lefts.length > 0;
+    var hasNext = i < G.diagram.length - 1;
+    var isBahanOnly = p.bahanOnly || (!p.text || p.text.trim() === '');
+
+    if (isBahanOnly) {
+      // Bahan-only node: vertical line + side box, no main rectangle
+      var topLineH = LINE_H;
+      svg += '<line x1="' + CX + '" y1="' + y + '" x2="' + CX + '" y2="' + (y+topLineH) + '" stroke="#555" stroke-width="1.5"/>';
+      y += topLineH;
+
+      var midY = y + BAHAN_H/2;
+      svg += '<line x1="' + CX + '" y1="' + y + '" x2="' + CX + '" y2="' + (y+BAHAN_H) + '" stroke="#555" stroke-width="1.5"/>';
+
+      rights.forEach(function(s) {
+        var sw = Math.max(SIDE_W, s.text.length * 8 + 24);
+        var sx = CX + BOX_W/2 + 10;
+        svg += '<line x1="' + CX + '" y1="' + midY + '" x2="' + sx + '" y2="' + midY + '" stroke="#555" stroke-width="1.5"/>';
+        svg += '<rect x="' + sx + '" y="' + (midY-SIDE_H/2) + '" width="' + sw + '" height="' + SIDE_H + '" rx="5" fill="#f8f8f8" stroke="#888" stroke-width="1.2"/>';
+        svg += '<text x="' + (sx+sw/2) + '" y="' + (midY+5) + '" text-anchor="middle" font-size="12" font-weight="bold" fill="#3b6fd4">' + xmlEsc(s.text) + '</text>';
+      });
+      lefts.forEach(function(s) {
+        var sw = Math.max(SIDE_W, s.text.length * 8 + 24);
+        var sx = CX - BOX_W/2 - 10 - sw;
+        svg += '<line x1="' + CX + '" y1="' + midY + '" x2="' + (sx+sw) + '" y2="' + midY + '" stroke="#555" stroke-width="1.5"/>';
+        svg += '<rect x="' + sx + '" y="' + (midY-SIDE_H/2) + '" width="' + sw + '" height="' + SIDE_H + '" rx="5" fill="#f8f8f8" stroke="#888" stroke-width="1.2"/>';
+        svg += '<text x="' + (sx+sw/2) + '" y="' + (midY+5) + '" text-anchor="middle" font-size="12" font-weight="bold" fill="#3b6fd4">' + xmlEsc(s.text) + '</text>';
+      });
+      y += BAHAN_H;
+
+      svg += '<line x1="' + CX + '" y1="' + y + '" x2="' + CX + '" y2="' + (y+LINE_H) + '" stroke="#555" stroke-width="1.5"/>';
+      svg += '<polygon points="' + CX + ',' + (y+LINE_H+8) + ' ' + (CX-7) + ',' + (y+LINE_H) + ' ' + (CX+7) + ',' + (y+LINE_H) + '" fill="#555"/>';
+      y += LINE_H + 8;
+
+    } else {
+      // Normal box
+      var bx = CX - BOX_W/2, by = y;
+      svg += '<rect x="' + bx + '" y="' + by + '" width="' + BOX_W + '" height="' + BOX_H + '" rx="8" fill="#f0f4ff" stroke="#3b6fd4" stroke-width="1.5"/>';
+      svg += '<rect x="' + bx + '" y="' + by + '" width="28" height="28" rx="4" fill="#3b6fd4"/>';
+      svg += '<text x="' + (bx+14) + '" y="' + (by+19) + '" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">' + p.num + '</text>';
+
+      var words = p.text.split(' ');
+      var lines = [], cur = '';
+      words.forEach(function(w) {
+        if ((cur+' '+w).trim().length > 36) { if(cur) lines.push(cur.trim()); cur=w; }
+        else cur=(cur+' '+w).trim();
+      });
+      if (cur) lines.push(cur.trim());
+      lines = lines.slice(0,3);
+      var lh = 16, ty = by + BOX_H/2 - (lines.length*lh)/2 + 11;
+      lines.forEach(function(l,li) {
+        svg += '<text x="' + (CX+8) + '" y="' + (ty+li*lh) + '" text-anchor="middle" font-size="11">' + xmlEsc(l) + '</text>';
+      });
+      y += BOX_H;
+
+      if (hasSides || hasNext) {
+        svg += '<line x1="' + CX + '" y1="' + y + '" x2="' + CX + '" y2="' + (y+LINE_H) + '" stroke="#555" stroke-width="1.5"/>';
+        y += LINE_H;
+        if (hasSides) {
+          var midY2 = y + BAHAN_H/2;
+          svg += '<line x1="' + CX + '" y1="' + y + '" x2="' + CX + '" y2="' + (y+BAHAN_H) + '" stroke="#555" stroke-width="1.5"/>';
+          rights.forEach(function(s) {
+            var sw = Math.max(SIDE_W, s.text.length * 8 + 24);
+            var sx = CX + BOX_W/2 + 10;
+            svg += '<line x1="' + CX + '" y1="' + midY2 + '" x2="' + sx + '" y2="' + midY2 + '" stroke="#555" stroke-width="1.5"/>';
+            svg += '<rect x="' + sx + '" y="' + (midY2-SIDE_H/2) + '" width="' + sw + '" height="' + SIDE_H + '" rx="5" fill="#f8f8f8" stroke="#888" stroke-width="1.2"/>';
+            svg += '<text x="' + (sx+sw/2) + '" y="' + (midY2+5) + '" text-anchor="middle" font-size="12" font-weight="bold" fill="#3b6fd4">' + xmlEsc(s.text) + '</text>';
+          });
+          lefts.forEach(function(s) {
+            var sw = Math.max(SIDE_W, s.text.length * 8 + 24);
+            var sx = CX - BOX_W/2 - 10 - sw;
+            svg += '<line x1="' + CX + '" y1="' + midY2 + '" x2="' + (sx+sw) + '" y2="' + midY2 + '" stroke="#555" stroke-width="1.5"/>';
+            svg += '<rect x="' + sx + '" y="' + (midY2-SIDE_H/2) + '" width="' + sw + '" height="' + SIDE_H + '" rx="5" fill="#f8f8f8" stroke="#888" stroke-width="1.2"/>';
+            svg += '<text x="' + (sx+sw/2) + '" y="' + (midY2+5) + '" text-anchor="middle" font-size="12" font-weight="bold" fill="#3b6fd4">' + xmlEsc(s.text) + '</text>';
+          });
+          y += BAHAN_H;
+        }
+        if (hasNext) {
+          svg += '<line x1="' + CX + '" y1="' + y + '" x2="' + CX + '" y2="' + (y+LINE_H) + '" stroke="#555" stroke-width="1.5"/>';
+          svg += '<polygon points="' + CX + ',' + (y+LINE_H+8) + ' ' + (CX-7) + ',' + (y+LINE_H) + ' ' + (CX+7) + ',' + (y+LINE_H) + '" fill="#555"/>';
+          y += LINE_H + 8;
+        }
+      }
+    }
+  });
+  svg += '</svg>';
+  return svg;
+}
+
+function xmlEsc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── PENYIMPANAN ──
+function renderPenyimpanan() {
+  var el = document.getElementById('penyimpananContent');
+  if (!el) return;
+  var storage = getStorage();
+  if (!storage.length) { el.innerHTML = '<div class="empty-state">Belum ada data tersimpan.</div>'; return; }
+
+  var html = '<div style="margin-bottom:16px;color:var(--muted);font-size:13px">' + storage.length + ' produk tersimpan</div>';
+
+  storage.forEach(function(item) {
+    var date = new Date(item.savedAt).toLocaleString('id-ID');
+    var dn = esc(item.name);
+    html += '<div class="storage-card"><div class="storage-header">';
+    html += '<div><div class="storage-prod-name">' + dn + '</div><div class="storage-meta">Disimpan: ' + date + '</div></div>';
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap">';
+    html += '<button class="btn-sm" data-action="excel" data-name="' + dn + '" onclick="storageAction(this)">📊 Excel</button>';
+    if (item.diagramSVG) {
+      html += '<button class="btn-sm" data-action="svg" data-name="' + dn + '" onclick="storageAction(this)">🖼 SVG</button>';
+      html += '<button class="btn-sm" data-action="png" data-name="' + dn + '" onclick="storageAction(this)">📷 PNG</button>';
+    }
+    html += '<div style="width:1px;background:var(--border);margin:0 2px"></div>';
+    if (item.prosedur) html += '<button class="btn-sm btn-danger" data-action="del-prosedur" data-name="' + dn + '" onclick="storageAction(this)">🗑 Prosedur</button>';
+    if (item.diagram) html += '<button class="btn-sm btn-danger" data-action="del-diagram" data-name="' + dn + '" onclick="storageAction(this)">🗑 Diagram</button>';
+    html += '<button class="btn-sm btn-danger" data-action="del-all" data-name="' + dn + '" onclick="storageAction(this)">🗑 Semua</button>';
+    html += '</div></div><div class="storage-body">';
+
+    if (item.prosedur && item.prosedur.length) {
+      html += '<div class="storage-section"><div class="storage-section-title">📝 Prosedur (' + item.prosedur.length + ' langkah)</div><div class="storage-proc-preview">';
+      item.prosedur.forEach(function(p) {
+        html += '<div style="margin-bottom:6px"><span style="color:var(--accent);font-family:var(--mono);font-weight:600">' + p.num + '.</span> ' + esc(p.text) + '</div>';
+      });
+      html += '</div></div>';
+    }
+
+    if (item.diagram && item.diagram.length) {
+      html += '<div class="storage-section"><div class="storage-section-title">🔀 Diagram Alir (' + item.diagram.length + ' langkah)</div>';
+      var totalSides = item.diagram.reduce(function(s,p){return s+(p.sides?p.sides.length:0);},0);
+      html += '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">' + totalSides + ' kode bahan terhubung</div>';
+      if (item.diagramSVG) {
+        html += '<div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;background:#fff;max-height:300px;overflow-y:auto">';
+        html += item.diagramSVG.replace(/width="\d+"/, 'width="100%"');
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+
+    html += '</div></div>';
+  });
+
+  el.innerHTML = html;
+}
+
+function showToast(msg) {
+  var t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:var(--success);color:#000;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;font-family:var(--mono);font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.4)';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},2500);
+}
+
+// ── DIAGRAM MANUAL STATE ──
+const M = { steps: [] }; // manual diagram steps
+
+function renderDiagramManual() {
+  var el = document.getElementById('diagramManualContent');
+  if (!el) return;
+
+  var html = '<div class="prod-name-wrap"><span class="prod-name-label">Nama Produk</span>';
+  html += '<input class="prod-name-input" id="prodNameManual" type="text" placeholder="Masukkan nama produk..." value="' + esc(currentProductName) + '" oninput="currentProductName=this.value"></div>';
+
+  html += '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">';
+  html += '<button class="btn-sm btn-accent" onclick="saveManualDiagram()">💾 Simpan Diagram</button>';
+  html += '<button class="btn-sm" onclick="resetManualDiagram()">🗑 Reset Semua</button>';
+  html += '<div class="dl-menu-wrap"><button class="btn-sm" style="border-color:var(--accent2);color:var(--accent2)" onclick="toggleDlMenuManual(event)">⬇ Download ▾</button>';
+  html += '<div class="dl-menu" id="dlMenuManual">';
+  html += '<button class="dl-item" onclick="downloadManualSVG()">🖼 Download SVG</button>';
+  html += '<button class="dl-item" onclick="downloadManualPNG()">📷 Download PNG</button>';
+  html += '<button class="dl-item" onclick="downloadManualExcel()">📊 Download Excel</button>';
+  html += '</div></div></div>';
+
+  html += '<div class="grid-2" style="align-items:start">';
+
+  // Left: prosedur read-only
+  html += '<div class="card"><div class="card-header"><div class="card-title">📋 Prosedur (read-only)</div></div>';
+  html += '<div class="card-body"><div class="proc-list">';
+  if (G.procedures.length === 0) {
+    html += '<div class="empty-state">Buat prosedur di menu "Buat Prosedur" dulu.</div>';
+  } else {
+    G.procedures.forEach(function(p) {
+      var displayText = p.text;
+      if (displayText.indexOf('\n') === -1) displayText = formatProcText(displayText);
+      // Remove "masukan bahan: KODE xxx Gram" lines from display
+      displayText = displayText.replace(/[^\n]*[A-Z]{2}\d{2,3}[\s\.]*[\d][\d\.,]*\s*(?:Gram|gram)[^\n]*/g, '').replace(/\n{2,}/g, '\n').trim();
+      var htmlText = esc(displayText).replace(/\n/g, '<br>');
+      html += '<div class="proc-item"><div class="proc-num">' + p.num + '.</div><div style="flex:1;font-size:13px;line-height:1.8">' + htmlText + '</div></div>';
+    });
+  }
+  html += '</div></div></div>';
+
+  // Right: manual diagram
+  html += '<div class="card"><div class="card-header"><div class="card-title">✏️ Diagram Alir Manual</div>';
+  html += '<div style="font-size:11px;color:var(--muted)">Klik teks untuk edit</div></div>';
+  html += '<div class="card-body" style="padding:10px"><div class="flow-outer"><div class="flow-container" id="manualFlowContainer">';
+  html += buildManualFlowHTML();
+  html += '</div></div></div></div>';
+
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function buildManualFlowHTML() {
+  var html = '';
+  // Add button at top
+  html += '<div style="text-align:center;margin-bottom:8px">';
+  html += '<button class="flow-add-step-btn" onclick="addManualStep(-1, false)">+ Tambah Langkah</button> ';
+  html += '<button class="flow-add-step-btn" onclick="addManualStep(-1, true)" style="border-color:var(--border)">+ Tambah Bahan</button>';
+  html += '</div>';
+
+  if (M.steps.length === 0) {
+    html += '<div class="empty-state" style="padding:20px">Belum ada langkah.<br>Klik tombol di atas untuk memulai.</div>';
+    return html;
+  }
+
+  M.steps.forEach(function(step, i) {
+    var isBahan = step.bahanOnly;
+    var hasNext = i < M.steps.length - 1;
+
+    if (isBahan) {
+      // Bahan node
+      html += '<div class="flow-step-wrap" id="ms-' + i + '">';
+      html += '<button class="flow-del-btn" onclick="deleteManualStep(' + i + ')">✕</button>';
+      html += '<div style="display:flex;flex-direction:column;align-items:center;width:100%">';
+      html += '<div class="flow-vert-top"></div>';
+      html += '<div class="flow-bahan-row">';
+      html += '<div class="flow-vert-center" style="min-height:36px"></div>';
+      html += '<div class="flow-bahan-right"><div class="flow-side-box-wrap">';
+      html += '<div class="flow-side-box" contenteditable="true" onblur="updateManualStep(' + i + ',this.innerText)">' + esc(step.text || 'BB') + '</div>';
+      html += '</div></div>';
+      html += '</div>';
+      if (hasNext) html += '<div class="flow-vert-top"></div>';
+      html += '</div>';
+      html += '</div>';
+    } else {
+      // Main box
+      html += '<div class="flow-step-wrap" id="ms-' + i + '">';
+      html += '<button class="flow-del-btn" onclick="deleteManualStep(' + i + ')">✕</button>';
+      html += '<div class="flow-box" contenteditable="true" onblur="updateManualStep(' + i + ',this.innerText)">' + esc(step.text || 'Langkah baru...') + '</div>';
+      html += '</div>';
+      if (hasNext) {
+        html += '<div class="flow-vert-section"><div class="flow-vert-top"></div>';
+        html += '<div class="flow-vert-center" style="height:24px"></div>';
+        html += '<div class="flow-vert-bottom"></div></div>';
+      }
+    }
+
+    // Insert buttons between steps
+    html += '<div class="flow-actions" style="margin:2px 0">';
+    html += '<button class="flow-add-side" onclick="addManualStep(' + (i+1) + ', false)">+ Sisip Langkah</button>';
+    html += '<button class="flow-add-side" onclick="addManualStep(' + (i+1) + ', true)">+ Sisip Bahan</button>';
+    html += '</div>';
+  });
+
+  return html;
+}
+
+function addManualStep(atIdx, isBahan) {
+  var newStep = { text: isBahan ? 'BB' : 'Langkah baru...', bahanOnly: isBahan };
+  if (atIdx < 0 || atIdx >= M.steps.length) {
+    M.steps.push(newStep);
+  } else {
+    M.steps.splice(atIdx, 0, newStep);
+  }
+  renderDiagramManual();
+}
+
+function deleteManualStep(i) {
+  M.steps.splice(i, 1);
+  renderDiagramManual();
+}
+
+function updateManualStep(i, txt) {
+  if (M.steps[i]) M.steps[i].text = txt.trim();
+}
+
+function resetManualDiagram() {
+  if (M.steps.length > 0 && !confirm('Reset semua langkah manual?')) return;
+  M.steps = [];
+  renderDiagramManual();
+}
+
+function saveManualDiagram() {
+  var pn = document.getElementById('prodNameManual');
+  if (pn) currentProductName = pn.value;
+  var name = currentProductName.trim();
+  if (!name) { showToast('❌ Isi nama produk terlebih dahulu'); return; }
+  var storage = getStorage();
+  var item = storage.find(function(s){return s.name===name;});
+  if (!item) { item = { name: name, savedAt: '', prosedur: null, diagram: null, diagramSVG: null }; storage.push(item); }
+  item.savedAt = new Date().toISOString();
+  item.diagram = JSON.parse(JSON.stringify(M.steps)).map(function(s,i){return {num:i+1,text:s.text,sides:s.bahanOnly?[{text:s.text,dir:'right'}]:[],bahanOnly:s.bahanOnly};});
+  item.diagramSVG = buildManualSVG();
+  setStorage(storage);
+  showToast('✓ ' + name + ' berhasil disimpan');
+  renderPenyimpanan();
+}
+
+function buildManualSVG() {
+  // Use same SVG builder but with M.steps
+  var saved = G.diagram;
+  G.diagram = M.steps.map(function(s,i){
+    return { num:i+1, text:s.text||'', sides:s.bahanOnly?[{text:s.text||'BB',dir:'right'}]:[], bahanOnly:s.bahanOnly };
+  });
+  var svg = buildSVG();
+  G.diagram = saved;
+  return svg;
+}
+
+function downloadManualSVG() {
+  var svg = buildManualSVG();
+  var blob = new Blob([svg], {type:'image/svg+xml;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (currentProductName||'diagram-manual').replace(/\s+/g,'-') + '.svg';
+  a.click();
+  var m = document.getElementById('dlMenuManual'); if(m) m.classList.remove('open');
+}
+
+function downloadManualPNG() {
+  svgToPNG(buildManualSVG(), (currentProductName||'diagram-manual').replace(/\s+/g,'-') + '.png');
+  var m = document.getElementById('dlMenuManual'); if(m) m.classList.remove('open');
+}
+
+function downloadManualExcel() {
+  if (typeof XLSX === 'undefined') return;
+  var wb = XLSX.utils.book_new();
+  var wsData = [['No','Tipe','Teks']];
+  M.steps.forEach(function(s,i){ wsData.push([i+1, s.bahanOnly?'Bahan':'Langkah', s.text]); });
+  var ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = [{wch:5},{wch:10},{wch:80}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Diagram Manual');
+  XLSX.writeFile(wb, (currentProductName||'diagram-manual').replace(/\s+/g,'-') + '.xlsx');
+  var m = document.getElementById('dlMenuManual'); if(m) m.classList.remove('open');
+}
+
+function toggleDlMenuManual(e) {
+  e.stopPropagation();
+  var m = document.getElementById('dlMenuManual');
+  if (m) m.classList.toggle('open');
+}
+
+window.onload = function() {
+  document.getElementById('loginPass').addEventListener('keydown', function(e){
+    if(e.key==='Enter') doLogin();
+  });
+};
+
+</script>
+</body>
+</html>
